@@ -44,6 +44,20 @@ glasses_a = ["", "glasses"]
 attribute_pool = [colors_a, pattern_a, gender_a, season_a, upper_t_a, u_sleeves_a,
                   colors_a, pattern_a, gender_a, season_a, lower_t_a, l_sleeves_a, leg_pose_a]
 
+encoder_path = 'encoder-12-1170.ckpt'
+vocab_path1 = 'json/train_up_vocab.pkl'
+vocab_path2 = 'clothing_vocab_accessory2.pkl'
+confidence = 0.5
+nms_thresh = 0.4
+cfg_file = 'cfg/yolov3.cfg'
+weights_file = 'yolov3.weights'
+reso = '832'
+scales = '1,2,3'
+embed_size = 256
+hidden_size = 512
+num_layers = 1
+roi_size = 13
+
 
 def calc_final_pred(sentence_arr):
     arr_of_arrPred = []
@@ -75,66 +89,65 @@ def calc_final_pred(sentence_arr):
 # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 device = torch.device('cpu')
 
+coco_classes = load_classes('data/coco.names')
+colors = pkl.load(open("pallete2", "rb"))
+# Image preprocessing
+transform = transforms.Compose([
+    transforms.ToTensor()])
 
-def main(args):
-    coco_classes = load_classes('data/coco.names')
-    colors = pkl.load(open("pallete2", "rb"))
-    # Image preprocessing
-    transform = transforms.Compose([
-        transforms.ToTensor()])
+# Load vocabulary wrapper
 
-    # Load vocabulary wrapper
+# Build the models
+# CUDA = torch.cuda.is_available()
 
-    # Build the models
-    # CUDA = torch.cuda.is_available()
+num_classes = 80
+yolov3 = Darknet(cfg_file)
+yolov3.load_weights(weights_file)
 
-    num_classes = 80
-    yolov3 = Darknet(args.cfg_file)
-    yolov3.load_weights(args.weights_file)
+print("yolo-v3 network successfully loaded")
 
-    print("yolo-v3 network successfully loaded")
+attribute_size = [15, 7, 3, 5, 8, 4, 15, 7, 3, 5, 3, 3, 4]
 
-    attribute_size = [15, 7, 3, 5, 8, 4, 15, 7, 3, 5, 3, 3, 4]
+encoder = EncoderClothing(embed_size, device, roi_size, attribute_size)
+# getting the url for the picture
 
-    encoder = EncoderClothing(args.embed_size, device, args.roi_size, attribute_size)
+# directory version(before we added the ing from url)
+# # Prepare an image
+# images = "test"
+#
+#
+# try:
+#     list_dir = os.listdir(images)
+#  #   list_dir.sort(key=lambda x: int(x[:-4]))
+#     imlist = [osp.join(osp.realpath('.'), images, img) for img in list_dir if os.path.splitext(img)[1].lower() =='.jpg'  or os.path.splitext(img)[1].lower() =='.jpeg' or os.path.splitext(img)[1] =='.png']
+#     print(imlist)
+# except NotADirectoryError:
+#     imlist = []
+#     imlist.append(osp.join(osp.realpath('.'), images))
+#     print('Not a directory error')
+# except FileNotFoundError:
+#     print ("No file or directory with the name {}".format(images))
+#     exit()
 
-    url_img = args.img_url
-    # getting the url for the picture
+yolov3.to(device)
+encoder.to(device)
 
-    # directory version(before we added the ing from url)
-    # # Prepare an image
-    # images = "test"
-    #
-    #
-    # try:
-    #     list_dir = os.listdir(images)
-    #  #   list_dir.sort(key=lambda x: int(x[:-4]))
-    #     imlist = [osp.join(osp.realpath('.'), images, img) for img in list_dir if os.path.splitext(img)[1].lower() =='.jpg'  or os.path.splitext(img)[1].lower() =='.jpeg' or os.path.splitext(img)[1] =='.png']
-    #     print(imlist)
-    # except NotADirectoryError:
-    #     imlist = []
-    #     imlist.append(osp.join(osp.realpath('.'), images))
-    #     print('Not a directory error')
-    # except FileNotFoundError:
-    #     print ("No file or directory with the name {}".format(images))
-    #     exit()
+yolov3.eval()
+encoder.eval()
 
-    yolov3.to(device)
-    encoder.to(device)
+encoder.load_state_dict(torch.load(encoder_path, map_location=device))
 
-    yolov3.eval()
-    encoder.eval()
+# for loop for the pictures in the directory
+# dir version
+# for inx, image_filename in enumerate(imlist):
+print('---------------------------')
 
-    encoder.load_state_dict(torch.load(args.encoder_path, map_location=device))
 
-    # for loop for the pictures in the directory
-    # dir version
-    # for inx, image_filename in enumerate(imlist):
-    print('---------------------------')
-    # dir version
-    # print(image_filename)
-    # preload_img = cv2.imread(image_filename)
+# dir version
+# print(image_filename)
+# preload_img = cv2.imread(image_filename)
 
+def main(url_img):
     # this 3 lines is to read img from url
     req = urllib.request.urlopen(url_img)
     arr = np.asarray(bytearray(req.read()), dtype=np.uint8)
@@ -168,7 +181,7 @@ def main(args):
     # Generate an caption from the image
     # Overall yolov3 returns a list of bounding boxes along with the recognized classes
     detections = yolov3(image_tensor, device, True)  # prediction mode for yolo-v3
-    detections = write_results(detections, args.confidence, num_classes, device, nms=True, nms_conf=args.nms_thresh)
+    detections = write_results(detections, confidence, num_classes, device, nms=True, nms_conf=nms_thresh)
     # original image dimension --> im_dim
     # view_image(detections)
 
@@ -211,7 +224,7 @@ def main(args):
                 bboxs_index = bboxs_index.to(device)
                 bboxs = bboxs.to(device)
 
-                roi_align = RoIAlign(args.roi_size, args.roi_size, transform_fpcoor=True).to(device)
+                roi_align = RoIAlign(roi_size, roi_size, transform_fpcoor=True).to(device)
                 roi_features = roi_align(feature, bboxs, bboxs_index)
                 #    print(roi_features)
                 #    print(roi_features.size())
@@ -260,7 +273,6 @@ def main(args):
     # if key & 0xFF == ord('q'):
     #     break
 
-
 #    image = Image.open(args.image)
 #    plt.imshow(np.asarray(image))
 
@@ -295,6 +307,3 @@ def main(args):
 #     colors = pkl.load(open("pallete2", "rb"))
 #
 #     main(args)
-
-
-
