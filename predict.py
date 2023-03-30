@@ -58,6 +58,9 @@ hidden_size = 512
 num_layers = 1
 roi_size = 13
 
+def convertToJson(array):
+    return {"color": array[0], "pattern": array[1], "gender": array[2],
+            "season": array[3], "itemType": array[4], "sleeves": array[5]}
 
 def calc_final_pred(sentence_arr):
     arr_of_arrPred = []
@@ -82,7 +85,7 @@ def calc_final_pred(sentence_arr):
             final_pred_top.append(common_pred)
         else:
             final_pred_bottom.append(common_pred)
-    return final_pred_top, final_pred_bottom
+    return convertToJson(final_pred_top), convertToJson(final_pred_bottom)
 
 
 # Device configuration
@@ -307,3 +310,5 @@ def main(url_img):
 #     colors = pkl.load(open("pallete2", "rb"))
 #
 #     main(args)
+
+main(url_img='https://images.asos-media.com/products/asos-design-crochet-shirt-dress-in-black/202934994-2?$n_480w$&wid=476&fit=constrain')
