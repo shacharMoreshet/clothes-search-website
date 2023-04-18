@@ -23,10 +23,10 @@ def make_shein_request(formatted_res_shein):
     for product in products:
         extracted_product = {
             "goods_id": product["goods_id"],
-            "goods_img": product["goods_img"],
-            "goods_name": product["goods_name"],
+            "img_url": product["goods_img"],
+            "name": product["goods_name"],
             "cat_id": product["cat_id"],
-            "retailPrice": product["retailPrice"]["amountWithSymbol"],
+            "price": product["retailPrice"]["amountWithSymbol"],
             "url": "https://www.shein.com/x-p-" + product["goods_id"] + "-cat-" + product["cat_id"] + ".html"
         }
         extracted_products_shein.append(extracted_product)
@@ -99,10 +99,10 @@ def make_asos_request(color,gender, item_type):
     asos_color = model_color_to_asos_color_id(color)
     categoryId = get_category_id(gender, item_type)
     if asos_color == "":
-        querystring = {"store": "US", "offset": "0", "limit": "16", "country": "US"
+        querystring = {"store": "US", "offset": "0", "limit": "20", "country": "US"
                        , "currency": "USD", "sizeSchema": "US", "lang": "en-US", "categoryId": categoryId}
     else:
-        querystring = {"store": "US", "offset": "0", "limit": "16", "country": "US", "base_colour": asos_color
+        querystring = {"store": "US", "offset": "0", "limit": "20", "country": "US", "base_colour": asos_color
                        , "currency": "USD", "sizeSchema": "US", "lang": "en-US", "categoryId": categoryId}
 
     headers = {
@@ -122,8 +122,8 @@ def make_asos_request(color,gender, item_type):
             "name": product["name"],
             "price": product["price"]["current"]["text"],
             "colour": product["colour"],
-            "url": product["url"],
-            "imageUrl": product["imageUrl"]
+            "url": "https://www.asos.com/" + product["url"],
+            "img_url": "https://" + product["imageUrl"]
         }
         extracted_products_asos.append(extracted_product)
     extracted_response_asos = {
