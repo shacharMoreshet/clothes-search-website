@@ -1,7 +1,15 @@
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
 from predict import main
 import requests
 import concurrent.futures
+from django.db import connection
+from django.http import JsonResponse
+from django.shortcuts import render, redirect
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login
+import json
 
 # Define functions to make requests to SHEIN API and ASOS API
 def make_shein_request(formatted_res_shein):
@@ -155,3 +163,20 @@ def get_image(request):
 
     # Return the combined response as JSON
     return JsonResponse(extracted_response_asos, safe=False)
+
+@csrf_exempt
+def signup_view(request):
+    if request.method == 'POST':
+        request_body = json.loads(request.body)
+        username = request_body.get('username')
+        password = request_body.get('password')
+
+        # Save the sign-up data to MySQL database
+        with connection.cursor() as cursor:
+            cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s)", [username, password])
+
+        # Return a JSON response to confirm that the sign-up was successful
+        return JsonResponse({'success': True})
+    else:
+        # Return an error response if the request method is not POST
+        return JsonResponse({'error': 'Invalid request method'})

@@ -5,4 +5,5 @@ from . import views
 
 urlpatterns = [
     path('predict/', views.get_image),
+    path('register/', views.signup_view),
 ]
