@@ -35,7 +35,9 @@ def make_shein_request(formatted_res_shein):
             "name": product["goods_name"],
             "cat_id": product["cat_id"],
             "price": product["retailPrice"]["amountWithSymbol"],
-            "url": "https://www.shein.com/x-p-" + product["goods_id"] + "-cat-" + product["cat_id"] + ".html"
+            "url": "https://www.shein.com/x-p-" + product["goods_id"] + "-cat-" + product["cat_id"] + ".html",
+            "sold_by": "Shein"
+
         }
         extracted_products_shein.append(extracted_product)
     extracted_response_shein = {
@@ -131,7 +133,8 @@ def make_asos_request(color,gender, item_type):
             "price": product["price"]["current"]["text"],
             "colour": product["colour"],
             "url": "https://www.asos.com/" + product["url"],
-            "img_url": "https://" + product["imageUrl"]
+            "img_url": "https://" + product["imageUrl"],
+            "sold_by": "Asos"
         }
         extracted_products_asos.append(extracted_product)
     extracted_response_asos = {
