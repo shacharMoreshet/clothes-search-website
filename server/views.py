@@ -183,3 +183,68 @@ def signup_view(request):
     else:
         # Return an error response if the request method is not POST
         return JsonResponse({'error': 'Invalid request method'})
+
+@csrf_exempt
+def add_favorite_product(request):
+    if request.method == 'POST':
+        request_body = json.loads(request.body)
+        username = request_body.get('username')
+        url = request_body.get('url')
+        productName = request_body.get('name')
+        productImage = request_body.get('img_url')
+        productPrice = request_body.get('price')
+        productOrigin = request_body.get('sold_by')
+
+        # Save the sign-up data to MySQL database
+        with connection.cursor() as cursor:
+            cursor.execute("INSERT INTO favorites (username, url, productName,productImage,productPrice,productOrigin ) VALUES (%s, %s, %s, %s, %s, %s)",
+                           [username, url, productName, productImage, productPrice, productOrigin])
+
+        # Return a JSON response to confirm that the sign-up was successful
+        return JsonResponse({'success': True})
+    else:
+        # Return an error response if the request method is not POST
+        return JsonResponse({'error': 'Invalid request method'})
+
+@csrf_exempt
+def get_all_favorites_products(request):
+    if request.method == 'GET':
+        # Get the username from the request parameters
+        request_body = json.loads(request.body)
+        username = request_body.get('username')
+        # Query the database for all favorite products of the user
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM favorites WHERE username=%s", [username])
+            favorite_products = cursor.fetchall()
+        # Create a list of favorite product objects
+        favorites_list = []
+        for product in favorite_products:
+            product_dict = {
+                'url': product[2],
+                'name': product[3],
+                'img_url': product[4],
+                'price': product[5],
+                'sold_by': product[6]
+            }
+            favorites_list.append(product_dict)
+        # Return the list of favorite products as a JSON response
+        return JsonResponse(favorites_list, safe=False)
+    else:
+        # Return an error response for unsupported request methods
+        return JsonResponse({'error': 'Unsupported request method.'})
+
+@csrf_exempt
+def delete_favorite_product(request):
+    if request.method == 'DELETE':
+        # Get the username from the request parameters
+        request_body = json.loads(request.body)
+        username = request_body.get('username')
+        product_name = request_body.get('name')
+        # Delete the favorite product from the database
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM favorites WHERE username=%s AND productName=%s", [username, product_name])
+        # Return a success response
+        return JsonResponse({'success': 'Favorite product deleted successfully.'})
+    else:
+        # Return an error response for unsupported request methods
+        return JsonResponse({'error': 'Unsupported request method.'})
