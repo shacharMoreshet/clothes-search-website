@@ -10,6 +10,8 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 import json
+import datetime
+import pytz
 
 # Define functions to make requests to SHEIN API and ASOS API
 def make_shein_request(formatted_res_shein):
@@ -245,6 +247,52 @@ def delete_favorite_product(request):
             cursor.execute("DELETE FROM favorites WHERE username=%s AND productName=%s", [username, product_name])
         # Return a success response
         return JsonResponse({'success': 'Favorite product deleted successfully.'})
+    else:
+        # Return an error response for unsupported request methods
+        return JsonResponse({'error': 'Unsupported request method.'})
+
+@csrf_exempt
+def add_history(request):
+    if request.method == 'POST':
+        request_body = json.loads(request.body)
+        username = request_body.get('username')
+        url = request_body.get('url')
+        tz = pytz.timezone('Israel')  # Replace with our timezone
+        now = datetime.datetime.now(tz)
+        current_date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
+
+        # Save the sign-up data to MySQL database
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO history (username, url, date) VALUES (%s, %s, %s)",
+                [username, url, current_date_time])
+
+        # Return a JSON response to confirm that the sign-up was successful
+        return JsonResponse({'success': True})
+    else:
+        # Return an error response if the request method is not POST
+        return JsonResponse({'error': 'Invalid request method'})
+
+
+def get_history(request):
+    if request.method == 'GET':
+        # Get the username from the request parameters
+        request_body = json.loads(request.body)
+        username = request_body.get('username')
+        # Query the database for all favorite products of the user
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM history WHERE username=%s", [username])
+            history_products = cursor.fetchall()
+        # Create a list of history objects
+        history_list = []
+        for product in history_products:
+            product_dict = {
+                'date': product[2],
+                'url': product[3],
+            }
+            history_list.append(product_dict)
+        # Return the list of favorite products as a JSON response
+        return JsonResponse(history_list, safe=False)
     else:
         # Return an error response for unsupported request methods
         return JsonResponse({'error': 'Unsupported request method.'})
