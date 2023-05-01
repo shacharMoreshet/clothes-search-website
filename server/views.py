@@ -175,10 +175,11 @@ def signup_view(request):
         request_body = json.loads(request.body)
         username = request_body.get('username')
         password = request_body.get('password')
+        email = request_body.get('email')
 
         # Save the sign-up data to MySQL database
         with connection.cursor() as cursor:
-            cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s)", [username, password])
+            cursor.execute("INSERT INTO users (username, password,email) VALUES (%s, %s, %s)", [username, password,email])
 
         # Return a JSON response to confirm that the sign-up was successful
         return JsonResponse({'success': True})
@@ -296,3 +297,23 @@ def get_history(request):
     else:
         # Return an error response for unsupported request methods
         return JsonResponse({'error': 'Unsupported request method.'})
+
+@csrf_exempt
+def edit_user_info(request):
+    if request.method == 'POST':
+        request_body = json.loads(request.body)
+        username = request_body.get('username')
+        password = request_body.get('password')
+        email = request_body.get('email')
+
+        # Save the sign-up data to MySQL database
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE users SET password=%s, email=%s WHERE username=%s",
+                [password, email, username])
+
+        # Return a JSON response to confirm that the sign-up was successful
+        return JsonResponse({'success': True})
+    else:
+        # Return an error response if the request method is not POST
+        return JsonResponse({'error': 'Invalid request method'})
