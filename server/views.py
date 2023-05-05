@@ -12,6 +12,11 @@ from django.contrib.auth import authenticate, login
 import json
 import datetime
 import pytz
+import jwt
+from django.http import JsonResponse
+from django.db import connection
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.hashers import check_password
 
 # Define functions to make requests to SHEIN API and ASOS API
 def make_shein_request(formatted_res_shein):
@@ -314,6 +319,32 @@ def edit_user_info(request):
 
         # Return a JSON response to confirm that the sign-up was successful
         return JsonResponse({'success': True})
+    else:
+        # Return an error response if the request method is not POST
+        return JsonResponse({'error': 'Invalid request method'})
+
+@csrf_exempt
+def login_view(request):
+    if request.method == 'POST':
+        request_body = json.loads(request.body)
+        username = request_body.get('username')
+        password = request_body.get('password')
+
+        # Check if the user exists in the database
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM users WHERE username=%s", [username])
+            user = cursor.fetchone()
+
+        # If user exists, verify the password
+        if user and (password == user[1]):
+            # Generate a JWT token
+            token = jwt.encode({'user_id': user[0]}, 'secret_key', algorithm='HS256')
+            print(token)
+            # Return the token as a JSON response
+            return JsonResponse({'token': token})
+        else:
+            # Return an error response if the username, email, or password is incorrect
+            return JsonResponse({'error': 'Invalid login credentials'})
     else:
         # Return an error response if the request method is not POST
         return JsonResponse({'error': 'Invalid request method'})
