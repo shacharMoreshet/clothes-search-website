@@ -17,6 +17,7 @@ from django.http import JsonResponse
 from django.db import connection
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import check_password
+from jwt import decode, InvalidTokenError
 
 # Define functions to make requests to SHEIN API and ASOS API
 def make_shein_request(formatted_res_shein):
@@ -195,8 +196,15 @@ def signup_view(request):
 @csrf_exempt
 def add_favorite_product(request):
     if request.method == 'POST':
+        token = request.headers.get('Authorization')
+        if not token:
+            return JsonResponse({'error': 'Missing Authorization header'}, status=401)
+        try:
+            payload = decode(token, 'secret_key', algorithms=['HS256'])
+        except InvalidTokenError:
+            return JsonResponse({'error': 'Invalid token'}, status=401)
+        username = payload.get('user_id')
         request_body = json.loads(request.body)
-        username = request_body.get('username')
         url = request_body.get('url')
         productName = request_body.get('name')
         productImage = request_body.get('img_url')
@@ -217,9 +225,14 @@ def add_favorite_product(request):
 @csrf_exempt
 def get_all_favorites_products(request):
     if request.method == 'GET':
-        # Get the username from the request parameters
-        request_body = json.loads(request.body)
-        username = request_body.get('username')
+        token = request.headers.get('Authorization')
+        if not token:
+            return JsonResponse({'error': 'Missing Authorization header'}, status=401)
+        try:
+            payload = decode(token, 'secret_key', algorithms=['HS256'])
+        except InvalidTokenError:
+            return JsonResponse({'error': 'Invalid token'}, status=401)
+        username = payload.get('user_id')
         # Query the database for all favorite products of the user
         with connection.cursor() as cursor:
             cursor.execute("SELECT * FROM favorites WHERE username=%s", [username])
@@ -244,9 +257,16 @@ def get_all_favorites_products(request):
 @csrf_exempt
 def delete_favorite_product(request):
     if request.method == 'DELETE':
+        token = request.headers.get('Authorization')
+        if not token:
+            return JsonResponse({'error': 'Missing Authorization header'}, status=401)
+        try:
+            payload = decode(token, 'secret_key', algorithms=['HS256'])
+        except InvalidTokenError:
+            return JsonResponse({'error': 'Invalid token'}, status=401)
+        username = payload.get('user_id')
         # Get the username from the request parameters
         request_body = json.loads(request.body)
-        username = request_body.get('username')
         product_name = request_body.get('name')
         # Delete the favorite product from the database
         with connection.cursor() as cursor:
@@ -260,8 +280,15 @@ def delete_favorite_product(request):
 @csrf_exempt
 def add_history(request):
     if request.method == 'POST':
+        token = request.headers.get('Authorization')
+        if not token:
+            return JsonResponse({'error': 'Missing Authorization header'}, status=401)
+        try:
+            payload = decode(token, 'secret_key', algorithms=['HS256'])
+        except InvalidTokenError:
+            return JsonResponse({'error': 'Invalid token'}, status=401)
+        username = payload.get('user_id')
         request_body = json.loads(request.body)
-        username = request_body.get('username')
         url = request_body.get('url')
         tz = pytz.timezone('Israel')  # Replace with our timezone
         now = datetime.datetime.now(tz)
@@ -282,9 +309,14 @@ def add_history(request):
 
 def get_history(request):
     if request.method == 'GET':
-        # Get the username from the request parameters
-        request_body = json.loads(request.body)
-        username = request_body.get('username')
+        token = request.headers.get('Authorization')
+        if not token:
+            return JsonResponse({'error': 'Missing Authorization header'}, status=401)
+        try:
+            payload = decode(token, 'secret_key', algorithms=['HS256'])
+        except InvalidTokenError:
+            return JsonResponse({'error': 'Invalid token'}, status=401)
+        username = payload.get('user_id')
         # Query the database for all favorite products of the user
         with connection.cursor() as cursor:
             cursor.execute("SELECT * FROM history WHERE username=%s", [username])
@@ -306,8 +338,15 @@ def get_history(request):
 @csrf_exempt
 def edit_user_info(request):
     if request.method == 'POST':
+        token = request.headers.get('Authorization')
+        if not token:
+            return JsonResponse({'error': 'Missing Authorization header'}, status=401)
+        try:
+            payload = decode(token, 'secret_key', algorithms=['HS256'])
+        except InvalidTokenError:
+            return JsonResponse({'error': 'Invalid token'}, status=401)
+        username = payload.get('user_id')
         request_body = json.loads(request.body)
-        username = request_body.get('username')
         password = request_body.get('password')
         email = request_body.get('email')
 
