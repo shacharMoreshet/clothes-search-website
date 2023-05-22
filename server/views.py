@@ -19,6 +19,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import check_password
 from jwt import decode, InvalidTokenError
 
+# Set to store taken usernames
+taken_usernames = set()
+
 # Define functions to make requests to SHEIN API and ASOS API
 def make_shein_request(formatted_res_shein):
     url = "https://unofficial-shein.p.rapidapi.com/products/search"
@@ -182,6 +185,13 @@ def signup_view(request):
         username = request_body.get('username')
         password = request_body.get('password')
         email = request_body.get('email')
+        # Check if the username already exists in the set
+        if username in taken_usernames:
+            # Return an error response indicating that the username is already taken
+            return JsonResponse({'error': 'Username already exists'})
+
+        # Add the username to the set of taken usernames
+        taken_usernames.add(username)
 
         # Save the sign-up data to MySQL database
         with connection.cursor() as cursor:
@@ -265,7 +275,7 @@ def delete_favorite_product(request):
         except InvalidTokenError:
             return JsonResponse({'error': 'Invalid token'}, status=401)
         username = payload.get('user_id')
-        # Get the username from the request parameters
+
         request_body = json.loads(request.body)
         product_name = request_body.get('name')
         # Delete the favorite product from the database
@@ -336,6 +346,30 @@ def get_history(request):
         return JsonResponse({'error': 'Unsupported request method.'})
 
 @csrf_exempt
+def delete_history(request):
+    if request.method == 'DELETE':
+        token = request.headers.get('Authorization')
+        if not token:
+            return JsonResponse({'error': 'Missing Authorization header'}, status=401)
+        try:
+            payload = decode(token, 'secret_key', algorithms=['HS256'])
+        except InvalidTokenError:
+            return JsonResponse({'error': 'Invalid token'}, status=401)
+        username = payload.get('user_id')
+
+        request_body = json.loads(request.body)
+        url = request_body.get('url')
+        date = request_body.get('date')
+        # Delete the favorite product from the database
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM history WHERE username=%s AND url=%s AND date=%s", [username, url, date])
+        # Return a success response
+        return JsonResponse({'success': 'Product deleted successfully from history.'})
+    else:
+        # Return an error response for unsupported request methods
+        return JsonResponse({'error': 'Unsupported request method.'})
+
+@csrf_exempt
 def edit_user_info(request):
     if request.method == 'POST':
         token = request.headers.get('Authorization')
@@ -378,7 +412,6 @@ def login_view(request):
         if user and (password == user[1]):
             # Generate a JWT token
             token = jwt.encode({'user_id': user[0]}, 'secret_key', algorithm='HS256')
-            print(token)
             # Return the token as a JSON response
             return JsonResponse({'token': token})
         else:
@@ -387,3 +420,4 @@ def login_view(request):
     else:
         # Return an error response if the request method is not POST
         return JsonResponse({'error': 'Invalid request method'})
+
