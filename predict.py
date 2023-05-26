@@ -58,9 +58,24 @@ hidden_size = 512
 num_layers = 1
 roi_size = 13
 
+
 def convertToJson(array):
-    return {"color": array[0], "pattern": array[1], "gender": array[2],
-            "season": array[3], "itemType": array[4], "sleeves": array[5]}
+    data = {}
+
+    if len(array) >= 1:
+        data["color"] = array[0]
+    if len(array) >= 2:
+        data["pattern"] = array[1]
+    if len(array) >= 3:
+        data["gender"] = array[2]
+    if len(array) >= 4:
+        data["season"] = array[3]
+    if len(array) >= 5:
+        data["itemType"] = array[4]
+    if len(array) >= 6:
+        data["sleeves"] = array[5]
+
+    return data
 
 def calc_final_pred(sentence_arr):
     arr_of_arrPred = []
@@ -75,7 +90,6 @@ def calc_final_pred(sentence_arr):
     final_pred_bottom = []
     for j, arrPred in enumerate(arr_of_arrPred):
         occurence_count = Counter(arrPred)
-        # common_pred = occurence_count.most_common()[0][0]
         num_diff_pred = len(occurence_count.most_common())
         for i in range(num_diff_pred):
             common_pred = occurence_count.most_common()[i][0]
@@ -143,7 +157,6 @@ encoder.load_state_dict(torch.load(encoder_path, map_location=device))
 # for loop for the pictures in the directory
 # dir version
 # for inx, image_filename in enumerate(imlist):
-print('---------------------------')
 
 
 # dir version
@@ -155,7 +168,6 @@ def main(url_img):
     req = urllib.request.urlopen(url_img)
     arr = np.asarray(bytearray(req.read()), dtype=np.uint8)
     preload_img = cv2.imdecode(arr, -1)  # 'Load it as it is'
-
     pixel = preload_img.shape[1] * preload_img.shape[0]
 
     if pixel < 352 * 240:
@@ -175,7 +187,6 @@ def main(url_img):
     # image, orig_img, im_dim = prep_image(image_filename, inp_dim)
 
     image, orig_img, im_dim = prep_image(url_img, inp_dim)
-
     im_dim = torch.FloatTensor(im_dim).repeat(1, 2)
 
     image_tensor = image.to(device)
@@ -261,7 +272,6 @@ def main(url_img):
 
                     write(detections[i], orig_img, sampled_caption, sentence, i + 1, coco_classes, colors)
                     # list(map(lambda x: write(x, orig_img, captions), detections[i].unsqueeze(0)))
-
     final_pred_top, final_pred_bottom = calc_final_pred(sentence_arr)
     # print("final prediction top: " + str(final_pred_top))
     # print("final prediction bottom: " + str(final_pred_bottom))

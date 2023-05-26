@@ -19,7 +19,7 @@ def prep_image(img, inp_dim):
     
     Returns a Variable 
     """
-
+    print(img)
     orig_im = img
     dim = orig_im.shape[1], orig_im.shape[0]
     img = cv2.resize(orig_im, (inp_dim, inp_dim))

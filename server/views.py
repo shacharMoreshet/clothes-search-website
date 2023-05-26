@@ -22,11 +22,12 @@ from jwt import decode, InvalidTokenError
 # Set to store taken usernames
 taken_usernames = set()
 
+
 # Define functions to make requests to SHEIN API and ASOS API
 def make_shein_request(formatted_res_shein):
     url = "https://unofficial-shein.p.rapidapi.com/products/search"
     querystring = {"keywords": formatted_res_shein, "language": "en", "country": "US", "currency": "USD",
-                   "sort": "0", "limit": "16", "page": "1"}
+                   "sort": "0", "limit": "50", "page": "1"}
     headers = {
         "X-RapidAPI-Key": "e89d51aa0amsh2b3423580244074p1a3341jsnd51bb2cfbd9b",
         "X-RapidAPI-Host": "unofficial-shein.p.rapidapi.com"
@@ -56,6 +57,7 @@ def make_shein_request(formatted_res_shein):
         "products_shein": extracted_products_shein
     }
     return extracted_response_shein
+
 
 def model_color_to_asos_color_id(color):
     # model color options : "", "white", "black", "gray", "pink", "red", "green", "blue", "brown", "navy",
@@ -94,6 +96,8 @@ def model_color_to_asos_color_id(color):
         return "17"
     else:
         return ""
+
+
 def get_category_id(gender, item_type):
     # model types: "shirt", "jumper", "jacket", "vest", "parka", "coat", "dress"
     if gender == "man":
@@ -105,7 +109,7 @@ def get_category_id(gender, item_type):
             return ""
     else:
         if item_type == "shirt":
-            #return "11318"
+            # return "11318"
             return "4169"
         elif item_type == ("jacket" or "coat"):
             return "2641"
@@ -115,16 +119,16 @@ def get_category_id(gender, item_type):
             return ""
 
 
-def make_asos_request(color,gender, item_type):
+def make_asos_request(color, gender, item_type):
     url = "https://asos2.p.rapidapi.com/products/v2/list"
     asos_color = model_color_to_asos_color_id(color)
     categoryId = get_category_id(gender, item_type)
     if asos_color == "":
-        querystring = {"store": "US", "offset": "0", "limit": "20", "country": "US"
-                       , "currency": "USD", "sizeSchema": "US", "lang": "en-US", "categoryId": categoryId}
+        querystring = {"store": "US", "offset": "0", "limit": "50", "country": "US"
+            , "currency": "USD", "sizeSchema": "US", "lang": "en-US", "categoryId": categoryId}
     else:
-        querystring = {"store": "US", "offset": "0", "limit": "20", "country": "US", "base_colour": asos_color
-                       , "currency": "USD", "sizeSchema": "US", "lang": "en-US", "categoryId": categoryId}
+        querystring = {"store": "US", "offset": "0", "limit": "50", "country": "US", "base_colour": asos_color
+            , "currency": "USD", "sizeSchema": "US", "lang": "en-US", "categoryId": categoryId}
 
     headers = {
         "X-RapidAPI-Key": "e89d51aa0amsh2b3423580244074p1a3341jsnd51bb2cfbd9b",
@@ -155,21 +159,28 @@ def make_asos_request(color,gender, item_type):
     }
     return extracted_response_asos
 
+
 def get_image(request):
     image_url = request.GET.get('image_url')
     res = main(image_url)  # the response of the model
+    print(res)
     top = res["top"]
-    color = top["color"]
-    gender = top["gender"]
-    item_type = top["itemType"]
-    formatted_res_shein = "{} {} {} {} {}".format(top["gender"], top["color"], top["itemType"], top["sleeves"],
-                                            top["pattern"])
+    color = top.get("color", "")
+    gender = top.get("gender", "")
+    item_type = top.get("itemType", "")
+    sleeves = top.get("sleeves", "")
+    pattern = top.get("pattern", "")
+    if color == "" and gender == "" and item_type == "":
+        response_data = {'error': 'Could not extract features from this image'}
+        return JsonResponse(response_data, status=400)
+
+    formatted_res_shein = "{} {} {} {} {}".format(gender, color, item_type, sleeves,
+                                                  pattern)
 
     # Make requests to SHEIN and ASOS APIs in parallel using ThreadPoolExecutor
     with concurrent.futures.ThreadPoolExecutor() as executor:
         shein_future = executor.submit(make_shein_request, formatted_res_shein)
         asos_future = executor.submit(make_asos_request, color, gender, item_type)
-
     # Extract the results from the futures
     extracted_response_shein = shein_future.result()
     extracted_response_asos = asos_future.result()
@@ -177,6 +188,7 @@ def get_image(request):
 
     # Return the combined response as JSON
     return JsonResponse(extracted_response_asos, safe=False)
+
 
 @csrf_exempt
 def signup_view(request):
@@ -195,13 +207,15 @@ def signup_view(request):
 
         # Save the sign-up data to MySQL database
         with connection.cursor() as cursor:
-            cursor.execute("INSERT INTO users (username, password,email) VALUES (%s, %s, %s)", [username, password,email])
+            cursor.execute("INSERT INTO users (username, password,email) VALUES (%s, %s, %s)",
+                           [username, password, email])
 
         # Return a JSON response to confirm that the sign-up was successful
         return JsonResponse({'success': True})
     else:
         # Return an error response if the request method is not POST
         return JsonResponse({'error': 'Invalid request method'})
+
 
 @csrf_exempt
 def add_favorite_product(request):
@@ -223,14 +237,16 @@ def add_favorite_product(request):
 
         # Save the sign-up data to MySQL database
         with connection.cursor() as cursor:
-            cursor.execute("INSERT INTO favorites (username, url, productName,productImage,productPrice,productOrigin ) VALUES (%s, %s, %s, %s, %s, %s)",
-                           [username, url, productName, productImage, productPrice, productOrigin])
+            cursor.execute(
+                "INSERT INTO favorites (username, url, productName,productImage,productPrice,productOrigin ) VALUES (%s, %s, %s, %s, %s, %s)",
+                [username, url, productName, productImage, productPrice, productOrigin])
 
         # Return a JSON response to confirm that the sign-up was successful
         return JsonResponse({'success': True})
     else:
         # Return an error response if the request method is not POST
         return JsonResponse({'error': 'Invalid request method'})
+
 
 @csrf_exempt
 def get_all_favorites_products(request):
@@ -264,6 +280,7 @@ def get_all_favorites_products(request):
         # Return an error response for unsupported request methods
         return JsonResponse({'error': 'Unsupported request method.'})
 
+
 @csrf_exempt
 def delete_favorite_product(request):
     if request.method == 'DELETE':
@@ -286,6 +303,7 @@ def delete_favorite_product(request):
     else:
         # Return an error response for unsupported request methods
         return JsonResponse({'error': 'Unsupported request method.'})
+
 
 @csrf_exempt
 def add_history(request):
@@ -345,6 +363,7 @@ def get_history(request):
         # Return an error response for unsupported request methods
         return JsonResponse({'error': 'Unsupported request method.'})
 
+
 @csrf_exempt
 def delete_history(request):
     if request.method == 'DELETE':
@@ -368,6 +387,7 @@ def delete_history(request):
     else:
         # Return an error response for unsupported request methods
         return JsonResponse({'error': 'Unsupported request method.'})
+
 
 @csrf_exempt
 def edit_user_info(request):
@@ -396,6 +416,7 @@ def edit_user_info(request):
         # Return an error response if the request method is not POST
         return JsonResponse({'error': 'Invalid request method'})
 
+
 @csrf_exempt
 def login_view(request):
     if request.method == 'POST':
@@ -420,4 +441,3 @@ def login_view(request):
     else:
         # Return an error response if the request method is not POST
         return JsonResponse({'error': 'Invalid request method'})
-
