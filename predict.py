@@ -25,8 +25,6 @@ if sys.version_info >= (3, 0):
 else:
     from roi_align import RoIAlign
 
-#  "winter scarf", "cane", "bag", "shoes", "hat", "face"]
-# attribute categories = #6
 colors_a = ["", "white", "black", "gray", "pink", "red", "green", "blue", "brown", "navy", "beige", \
             "yellow", "purple", "orange", "mixed color"]  # 0-14
 pattern_a = ["", "no pattern", "checker", "dotted", "floral", "striped", "custom pattern"]  # 0-6
@@ -137,13 +135,10 @@ encoder = EncoderClothing(embed_size, device, roi_size, attribute_size)
 #     list_dir = os.listdir(images)
 #  #   list_dir.sort(key=lambda x: int(x[:-4]))
 #     imlist = [osp.join(osp.realpath('.'), images, img) for img in list_dir if os.path.splitext(img)[1].lower() =='.jpg'  or os.path.splitext(img)[1].lower() =='.jpeg' or os.path.splitext(img)[1] =='.png']
-#     print(imlist)
 # except NotADirectoryError:
 #     imlist = []
 #     imlist.append(osp.join(osp.realpath('.'), images))
-#     print('Not a directory error')
 # except FileNotFoundError:
-#     print ("No file or directory with the name {}".format(images))
 #     exit()
 
 yolov3.to(device)
@@ -160,10 +155,9 @@ encoder.load_state_dict(torch.load(encoder_path, map_location=device))
 
 
 # dir version
-# print(image_filename)
 # preload_img = cv2.imread(image_filename)
 
-def main(url_img):
+def extract_garment_attributes(url_img):
     # this 3 lines is to read img from url
     req = urllib.request.urlopen(url_img)
     arr = np.asarray(bytearray(req.read()), dtype=np.uint8)
@@ -240,8 +234,6 @@ def main(url_img):
 
                 roi_align = RoIAlign(roi_size, roi_size, transform_fpcoor=True).to(device)
                 roi_features = roi_align(feature, bboxs, bboxs_index)
-                #    print(roi_features)
-                #    print(roi_features.size())
 
                 # roi_features = roi_features.reshape(roi_features.size(0), -1)
 
@@ -273,8 +265,6 @@ def main(url_img):
                     write(detections[i], orig_img, sampled_caption, sentence, i + 1, coco_classes, colors)
                     # list(map(lambda x: write(x, orig_img, captions), detections[i].unsqueeze(0)))
     final_pred_top, final_pred_bottom = calc_final_pred(sentence_arr)
-    # print("final prediction top: " + str(final_pred_top))
-    # print("final prediction bottom: " + str(final_pred_bottom))
     # cv2.imshow("frame", orig_img)
     # key = cv2.waitKey(0)
 
@@ -286,39 +276,4 @@ def main(url_img):
     # if key & 0xFF == ord('q'):
     #     break
 
-#    image = Image.open(args.image)
-#    plt.imshow(np.asarray(image))
-
-# if __name__ == '__main__':
-#     parser = argparse.ArgumentParser()
-#
-#     parser.add_argument('--encoder_path', type=str, default='encoder-12-1170.ckpt', help='path for trained encoder')
-#
-#     parser.add_argument('--vocab_path1', type=str, default='json/train_up_vocab.pkl',
-#                         help='path for vocabulary wrapper')
-#     parser.add_argument('--vocab_path2', type=str, default='clothing_vocab_accessory2.pkl',
-#                         help='path for vocabulary wrapper')
-#
-#     # Encoder - Yolo-v3 parameters
-#     parser.add_argument('--confidence', type=float, default=0.5, help='Object Confidence to filter predictions')
-#     parser.add_argument('--nms_thresh', type=float, default=0.4, help='NMS Threshhold')
-#     parser.add_argument('--cfg_file', type=str, default='cfg/yolov3.cfg', help='Config file')
-#     parser.add_argument('--weights_file', type=str, default='yolov3.weights', help='weightsfile')
-#     parser.add_argument('--reso', type=str, default='832',
-#                         help='Input resolution of the network. Increase to increase accuracy. Decrease to increase speed')
-#     parser.add_argument('--scales', type=str, default='1,2,3', help='Scales to use for detection')
-#
-#     # Model parameters (should be same as paramters in train.py)
-#     parser.add_argument('--embed_size', type=int, default=256, help='dimension of word embedding vectors')
-#     parser.add_argument('--hidden_size', type=int, default=512, help='dimension of lstm hidden states')
-#     parser.add_argument('--num_layers', type=int, default=1, help='number of layers in lstm')
-#     parser.add_argument('--roi_size', type=int, default=13)
-#     parser.add_argument('--img_url', type=str, default='', help='image_url')
-#     args = parser.parse_args()
-#
-#     coco_classes = load_classes('data/coco.names')
-#     colors = pkl.load(open("pallete2", "rb"))
-#
-#     main(args)
-
-main(url_img='https://images.asos-media.com/products/asos-design-crochet-shirt-dress-in-black/202934994-2?$n_480w$&wid=476&fit=constrain')
+extract_garment_attributes(url_img='https://images.asos-media.com/products/asos-design-crochet-shirt-dress-in-black/202934994-2?$n_480w$&wid=476&fit=constrain')
