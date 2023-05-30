@@ -42,9 +42,6 @@ CATEGORY_MAPPING = {
         "dress": "8799",
     }
 }
-POST = 'Post'
-DELETE = 'Delete'
-GET = 'Get'
 COLOR = "color"
 GENDER = "gender"
 ITEM_TYPE = "itemType"
@@ -63,7 +60,7 @@ LANGUAGE_ASOS = "en-US"
 COUNTRY = "US"
 CURRENCY = "USD"
 SORT = "0"
-LIMIT = "50"
+LIMIT = "20"
 PAGE = "1"
 STORE = "US"
 OFFSET = "0"

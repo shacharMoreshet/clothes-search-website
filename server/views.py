@@ -106,7 +106,6 @@ def make_asos_request(color, gender, item_type):
 def get_image(request):
     image_url = request.GET.get(IMG_URL)
     res = extract_garment_attributes(image_url)  # the response of the model
-    print(res)
     top = res[TOP]
     color = top.get(COLOR, "")
     gender = top.get(GENDER, "")
@@ -116,7 +115,6 @@ def get_image(request):
     if color == "" and gender == "" and item_type == "":
         response_data = {'error': ERROR_MODEL}
         return JsonResponse(response_data, status=400)
-
     formatted_res_shein = "{} {} {} {} {}".format(gender, color, item_type, sleeves,
                                                   pattern)
     # Make requests to SHEIN and ASOS APIs in parallel using ThreadPoolExecutor
@@ -133,7 +131,7 @@ def get_image(request):
 
 @csrf_exempt
 def signup_view(request):
-    if request.method == POST:
+    if request.method == 'POST':
         request_body = json.loads(request.body)
         username = request_body.get(USERNAME)
         password = request_body.get(PASSWORD)
@@ -160,7 +158,7 @@ def signup_view(request):
 
 @csrf_exempt
 def add_favorite_product(request):
-    if request.method == POST:
+    if request.method == 'POST':
         token = request.headers.get(AUTHORIZATION)
         if not token:
             return JsonResponse({'error': ERROR_MISSING_TOKEN}, status=401)
@@ -182,7 +180,6 @@ def add_favorite_product(request):
                 "INSERT INTO favorites (username, url, productName,productImage,productPrice,productOrigin ) VALUES (%s, %s, %s, %s, %s, %s)",
                 [username, url, productName, productImage, productPrice, productOrigin])
 
-        # Return a JSON response to confirm that the sign-up was successful
         return JsonResponse({'success': True})
     else:
         # Return an error response if the request method is not POST
@@ -191,7 +188,7 @@ def add_favorite_product(request):
 
 @csrf_exempt
 def get_all_favorites_products(request):
-    if request.method == GET:
+    if request.method == 'GET':
         token = request.headers.get(AUTHORIZATION)
         if not token:
             return JsonResponse({'error': ERROR_MISSING_TOKEN}, status=401)
@@ -224,7 +221,7 @@ def get_all_favorites_products(request):
 
 @csrf_exempt
 def delete_favorite_product(request):
-    if request.method == DELETE:
+    if request.method == 'DELETE':
         token = request.headers.get(AUTHORIZATION)
         if not token:
             return JsonResponse({'error': ERROR_MISSING_TOKEN}, status=401)
@@ -248,7 +245,7 @@ def delete_favorite_product(request):
 
 @csrf_exempt
 def add_history(request):
-    if request.method == POST:
+    if request.method == 'POST':
         token = request.headers.get(AUTHORIZATION)
         if not token:
             return JsonResponse({'error': ERROR_MISSING_TOKEN}, status=401)
@@ -277,7 +274,7 @@ def add_history(request):
 
 
 def get_history(request):
-    if request.method == GET:
+    if request.method == 'GET':
         token = request.headers.get(AUTHORIZATION)
         if not token:
             return JsonResponse({'error': ERROR_MISSING_TOKEN}, status=401)
@@ -307,7 +304,7 @@ def get_history(request):
 
 @csrf_exempt
 def delete_history(request):
-    if request.method == DELETE:
+    if request.method == 'DELETE':
         token = request.headers.get(AUTHORIZATION)
         if not token:
             return JsonResponse({'error': ERROR_MISSING_TOKEN}, status=401)
@@ -332,7 +329,7 @@ def delete_history(request):
 
 @csrf_exempt
 def edit_user_info(request):
-    if request.method == POST:
+    if request.method == 'POST':
         token = request.headers.get(AUTHORIZATION)
         if not token:
             return JsonResponse({'error': ERROR_MISSING_TOKEN}, status=401)
@@ -360,7 +357,7 @@ def edit_user_info(request):
 
 @csrf_exempt
 def login_view(request):
-    if request.method == POST:
+    if request.method == 'POST':
         request_body = json.loads(request.body)
         username = request_body.get(USERNAME)
         password = request_body.get(PASSWORD)
