@@ -379,3 +379,27 @@ def login_view(request):
     else:
         # Return an error response if the request method is not POST
         return JsonResponse({'error': ERROR_REQUEST_METHOD})
+
+
+
+@csrf_exempt
+def get_email(request):
+    if request.method == 'GET':
+        token = request.headers.get(AUTHORIZATION)
+        if not token:
+            return JsonResponse({'error': ERROR_MISSING_TOKEN}, status=401)
+        try:
+            payload = decode(token, SECRET_KEY, algorithms=[HASH_ALGORITHM])
+        except InvalidTokenError:
+            return JsonResponse({'error': ERROR_INVALID_TOKEN}, status=401)
+        username = payload.get('user_id')
+        # Query the database for all favorite products of the user
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT email FROM users WHERE username=%s", [username])
+            email = cursor.fetchall()
+        # Return the list of favorite products as a JSON response
+        return JsonResponse(email, safe=False)
+    else:
+        # Return an error response for unsupported request methods
+        return JsonResponse({'error': ERROR_REQUEST_METHOD})
+
