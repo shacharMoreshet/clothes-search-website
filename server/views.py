@@ -272,7 +272,7 @@ def add_history(request):
         # Return an error response if the request method is not POST
         return JsonResponse({'error': ERROR_REQUEST_METHOD})
 
-
+@csrf_exempt
 def get_history(request):
     if request.method == 'GET':
         token = request.headers.get(AUTHORIZATION)
@@ -296,7 +296,7 @@ def get_history(request):
             }
             history_list.append(product_dict)
         # Return the list of favorite products as a JSON response
-        return JsonResponse(history_list, safe=False)
+        return JsonResponse(history_list, safe=False, status=200)
     else:
         # Return an error response for unsupported request methods
         return JsonResponse({'error': ERROR_REQUEST_METHOD})
