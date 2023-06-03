@@ -345,11 +345,11 @@ def edit_user_info(request):
         # Save the sign-up data to MySQL database
         with connection.cursor() as cursor:
             cursor.execute(
-                "UPDATE users SET password=%s, email=%s WHERE username=%s",
+                "UPDATE clothes_search.users SET password=%s, email=%s WHERE username=%s",
                 [password, email, username])
 
         # Return a JSON response to confirm that the sign-up was successful
-        return JsonResponse({'success': True})
+        return JsonResponse({'success': True}, status=200)
     else:
         # Return an error response if the request method is not POST
         return JsonResponse({'error': ERROR_REQUEST_METHOD})
@@ -364,7 +364,7 @@ def login_view(request):
 
         # Check if the user exists in the database
         with connection.cursor() as cursor:
-            cursor.execute("SELECT * FROM users WHERE username=%s", [username])
+            cursor.execute("SELECT * FROM clothes_search.users WHERE username=%s", [username])
             user = cursor.fetchone()
 
         # If user exists, verify the password
@@ -403,3 +403,26 @@ def get_email(request):
         # Return an error response for unsupported request methods
         return JsonResponse({'error': ERROR_REQUEST_METHOD})
 
+@csrf_exempt
+def delete_user(request):
+    if request.method == 'DELETE':
+        token = request.headers.get('Authorization')
+        if not token:
+            return JsonResponse({'error': 'Missing token'}, status=401)
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[HASH_ALGORITHM])
+        except jwt.InvalidTokenError:
+            return JsonResponse({'error': 'Invalid token'}, status=401)
+        username = payload.get('user_id')
+
+        # Delete the user from the MySQL database
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "DELETE FROM clothes_search.users WHERE username=%s",
+                [username])
+
+        # Return a JSON response to confirm the successful deletion
+        return JsonResponse({'success': True}, status=200)
+    else:
+        # Return an error response if the request method is not POST
+        return JsonResponse({'error': 'Invalid request method'}, status=400)

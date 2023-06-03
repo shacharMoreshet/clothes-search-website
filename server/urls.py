@@ -13,5 +13,6 @@ urlpatterns = [
     path('history/delete/', views.delete_history, name='delete_history'),
     path('edit/', views.edit_user_info, name='edit_user_info'),
     path('login/', views.login_view, name='login_view'),
-    path('email/get/', views.get_email, name='get_email')
+    path('email/get/', views.get_email, name='get_email'),
+    path('delete/user/', views.delete_user, name='delete_user')
 ]

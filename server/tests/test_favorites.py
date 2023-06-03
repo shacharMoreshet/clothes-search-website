@@ -1,7 +1,6 @@
 import jwt
 from django.test import TestCase
 import requests
-from django.db import connection
 from server.constant import HASH_ALGORITHM
 from server.constant import SECRET_KEY
 
@@ -42,20 +41,12 @@ class FavoritesTestCase(TestCase):
 
     def test_delete_favorite_product(self):
         token = jwt.encode({'user_id': "shacharM"}, SECRET_KEY, algorithm=HASH_ALGORITHM)
-        header_delete = {
+        header = {
             "Authorization": token,
             "Content-Type": "application/json"
         }
-        username = USERNAME
-        url = URL_PRODUCT
-        productName = PRODUCT_NAME
-        productImage = PRODUCT_IMG
-        productPrice = PRODUCT_PRICE
-        productOrigin = PRODUCT_ORIGIN
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "INSERT INTO clothes_search.favorites (username, url, productName,productImage,productPrice,productOrigin ) VALUES (%s, %s, %s, %s, %s, %s)",
-                [username, url, productName, productImage, productPrice, productOrigin])
-        response = requests.post(URL_DELETE, headers=HEADER, json=BODY_DELETE)
+        response = requests.post(URL_ADD, headers=header, json=BODY_ADD)  # addressing to add_favorite_product
+        self.assertEqual(response.status_code, 200)
+        response = requests.post(URL_DELETE, headers=header, json=BODY_DELETE)
         self.assertEqual(response.status_code, 200)
         print("\nPassed delete-favorite-product test successfully")

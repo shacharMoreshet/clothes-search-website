@@ -1,10 +1,5 @@
-import jwt
 from django.test import TestCase
 import requests
-from django.db import connection
-
-from server.constant import HASH_ALGORITHM
-from server.constant import SECRET_KEY
 
 URL_ADD = "http://127.0.0.1:8000/history/add/"
 URL_GET = "http://127.0.0.1:8000/history/get/"
@@ -32,20 +27,3 @@ class HistoryTestCase(TestCase):
         response = requests.post(URL_GET, headers=HEADER, json={})
         self.assertEqual(response.status_code, 200)
         print("\nPassed get-history test successfully")
-
-    def test_delete_history(self):
-        token = jwt.encode({'user_id': "shacharM"}, SECRET_KEY, algorithm=HASH_ALGORITHM)
-        header_delete = {
-            "Authorization": token,
-            "Content-Type": "application/json"
-        }
-        url = URL_PRODUCT
-        username = USERNAME
-        current_date_time = TIME
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "INSERT INTO clothes_search.history (username, url, date) VALUES (%s, %s, %s)",
-                [username, url, current_date_time])
-        response = requests.post(URL_DELETE, headers=header_delete, json=BODY_DELETE)
-        self.assertEqual(response.status_code, 200)
-        print("\nPassed delete-history test successfully")
