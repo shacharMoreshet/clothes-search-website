@@ -11,10 +11,6 @@ from django.db import connection
 from django.views.decorators.csrf import csrf_exempt
 from jwt import decode, InvalidTokenError
 
-
-# Set to store taken usernames
-taken_usernames = set()
-
 # Define functions to make requests to SHEIN API and ASOS API
 def make_shein_request(formatted_res_shein):
     url = SHEIN_URL_API
@@ -106,6 +102,7 @@ def make_asos_request(color, gender, item_type):
 def get_image(request):
     image_url = request.GET.get(IMG_URL)
     res = extract_garment_attributes(image_url)  # the response of the model
+    print(res)
     top = res[TOP]
     color = top.get(COLOR, "")
     gender = top.get(GENDER, "")
@@ -115,8 +112,10 @@ def get_image(request):
     if color == "" and gender == "" and item_type == "":
         response_data = {'error': ERROR_MODEL}
         return JsonResponse(response_data, status=400)
-    formatted_res_shein = "{} {} {} {} {}".format(gender, color, item_type, sleeves,
-                                                  pattern)
+    if pattern == NO_PATTERN:
+        formatted_res_shein = "{} {} {} {}".format(gender, color, item_type, sleeves)
+    else:
+        formatted_res_shein = "{} {} {} {} {}".format(gender, color, item_type, sleeves,pattern)
     # Make requests to SHEIN and ASOS APIs in parallel using ThreadPoolExecutor
     with concurrent.futures.ThreadPoolExecutor() as executor:
         shein_future = executor.submit(make_shein_request, formatted_res_shein)
@@ -136,21 +135,25 @@ def signup_view(request):
         username = request_body.get(USERNAME)
         password = request_body.get(PASSWORD)
         email = request_body.get(EMAIL)
-        # Check if the username already exists in the set
-        if username in taken_usernames:
-            # Return an error response indicating that the username is already taken
-            return JsonResponse({'error': ERROR_USERNAME_EXISTS})
 
-        # Add the username to the set of taken usernames
-        taken_usernames.add(username)
+        try:
+            # Check if the user exists in the database
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT username FROM users WHERE username=%s", [username])
+                user = cursor.fetchone()[0]
+            if username == user:
+                # Return an error response indicating that the username is already taken
+                return JsonResponse({'error': ERROR_USERNAME_EXISTS})
 
-        # Save the sign-up data to MySQL database
-        with connection.cursor() as cursor:
-            cursor.execute("INSERT INTO users (username, password,email) VALUES (%s, %s, %s)",
-                           [username, password, email])
 
-        # Return a JSON response to confirm that the sign-up was successful
-        return JsonResponse({'success': True})
+        except:
+            # Save the sign-up data to MySQL database
+            with connection.cursor() as cursor:
+                cursor.execute("INSERT INTO users (username, password,email) VALUES (%s, %s, %s)",
+                               [username, password, email])
+
+            # Return a JSON response to confirm that the sign-up was successful
+            return JsonResponse({'success': True})
     else:
         # Return an error response if the request method is not POST
         return JsonResponse({'error': ERROR_REQUEST_METHOD})
@@ -321,10 +324,10 @@ def delete_history(request):
         with connection.cursor() as cursor:
             cursor.execute("DELETE FROM history WHERE username=%s AND url=%s AND date=%s", [username, url, date])
         # Return a success response
-        return JsonResponse({'success': 'Product deleted successfully from history.'})
+        return JsonResponse({'success': 'Product deleted successfully from history.'}, status=200)
     else:
         # Return an error response for unsupported request methods
-        return JsonResponse({'error': ERROR_REQUEST_METHOD})
+        return JsonResponse({'error': ERROR_REQUEST_METHOD}, status=400)
 
 
 @csrf_exempt
@@ -364,7 +367,7 @@ def login_view(request):
 
         # Check if the user exists in the database
         with connection.cursor() as cursor:
-            cursor.execute("SELECT * FROM clothes_search.users WHERE username=%s", [username])
+            cursor.execute("SELECT * FROM users WHERE username=%s", [username])
             user = cursor.fetchone()
 
         # If user exists, verify the password
@@ -418,7 +421,7 @@ def delete_user(request):
         # Delete the user from the MySQL database
         with connection.cursor() as cursor:
             cursor.execute(
-                "DELETE FROM clothes_search.users WHERE username=%s",
+                "DELETE FROM users WHERE username=%s",
                 [username])
 
         # Return a JSON response to confirm the successful deletion

@@ -1,6 +1,7 @@
 SHEIN_URL_API = "https://unofficial-shein.p.rapidapi.com/products/search"
 ASOS_URL_API = "https://asos2.p.rapidapi.com/products/v2/list"
-RAPIDAPI_KEY = "e89d51aa0amsh2b3423580244074p1a3341jsnd51bb2cfbd9b"
+# RAPIDAPI_KEY = "e89d51aa0amsh2b3423580244074p1a3341jsnd51bb2cfbd9b"
+RAPIDAPI_KEY = "9ce6906d70msh548ecc748cede00p11991ajsn97dea081bbe2"
 RAPIDAPI_HOST_SHEIN = "unofficial-shein.p.rapidapi.com"
 RAPIDAPI_HOST_ASOS = "asos2.p.rapidapi.com"
 ERROR_MODEL = 'Could not extract features from this image'
@@ -65,5 +66,6 @@ PAGE = "1"
 STORE = "US"
 OFFSET = "0"
 SIZESCHEMA = "US"
+NO_PATTERN = "no pattern"
 
 
