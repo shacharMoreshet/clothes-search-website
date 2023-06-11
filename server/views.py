@@ -102,7 +102,6 @@ def make_asos_request(color, gender, item_type):
 def get_image(request):
     image_url = request.GET.get(IMG_URL)
     res = extract_garment_attributes(image_url)  # the response of the model
-    print(res)
     top = res[TOP]
     color = top.get(COLOR, "")
     gender = top.get(GENDER, "")
